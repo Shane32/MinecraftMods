@@ -1,0 +1,14 @@
+{
+  "name": "minecraft-mods",
+  "version": "1.0.0",
+  "description": "Minecraft datapacks and resourcepacks",
+  "scripts": {
+    "pack": "node pack.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "yazl": "^3.3.1"
+  }
+}

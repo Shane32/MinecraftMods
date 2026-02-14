@@ -15,168 +15,51 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '24'
+          node-version-file: package.json
       
-      - name: Package packs and upload to release
+      - name: Install dependencies
+        run: npm install
+      
+      - name: Package packs
+        run: npm run pack
+      
+      - name: Upload release assets
         uses: actions/github-script@v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
             const path = require('path');
-            const { execSync } = require('child_process');
             
-            // Read version-numbers.json
-            const versionNumbers = JSON.parse(fs.readFileSync('version-numbers.json', 'utf8'));
+            const distDir = 'dist';
             
-            // Function to find version string for a given format number
-            function findVersionString(versionDict, formatNumber, isMin) {
-              const formatStr = String(formatNumber);
+            if (!fs.existsSync(distDir)) {
+              console.log('No dist directory found');
+              return;
+            }
+            
+            const zipFiles = fs.readdirSync(distDir)
+              .filter(file => file.endsWith('.zip'));
+            
+            console.log(`Found ${zipFiles.length} zip file(s) to upload`);
+            
+            for (const zipFile of zipFiles) {
+              const zipPath = path.join(distDir, zipFile);
+              const fileContent = fs.readFileSync(zipPath);
               
-              // Try exact match first
-              if (versionDict[formatStr]) {
-                return isMin ? versionDict[formatStr].min : versionDict[formatStr].max;
-              }
-              
-              // Try with .0 suffix
-              if (versionDict[formatStr + '.0']) {
-                return isMin ? versionDict[formatStr + '.0'].min : versionDict[formatStr + '.0'].max;
-              }
-              
-              // If looking for min, find the closest format number that's <= target
-              // If looking for max, find the closest format number that's >= target
-              const formatNumbers = Object.keys(versionDict).map(k => parseFloat(k)).sort((a, b) => a - b);
-              const targetNum = parseFloat(formatStr);
-              
-              if (isMin) {
-                // Find largest format number <= target
-                for (let i = formatNumbers.length - 1; i >= 0; i--) {
-                  if (formatNumbers[i] <= targetNum) {
-                    const key = String(formatNumbers[i]);
-                    const exactKey = versionDict[key] ? key : key + '.0';
-                    return versionDict[exactKey].min;
-                  }
-                }
-                // If no match found, use the first available
-                const firstKey = String(formatNumbers[0]);
-                const exactKey = versionDict[firstKey] ? firstKey : firstKey + '.0';
-                return versionDict[exactKey].min;
-              } else {
-                // Find smallest format number >= target
-                for (let i = 0; i < formatNumbers.length; i++) {
-                  if (formatNumbers[i] >= targetNum) {
-                    const key = String(formatNumbers[i]);
-                    const exactKey = versionDict[key] ? key : key + '.0';
-                    return versionDict[exactKey].max;
-                  }
-                }
-                // If no match found, use the last available
-                const lastKey = String(formatNumbers[formatNumbers.length - 1]);
-                const exactKey = versionDict[lastKey] ? lastKey : lastKey + '.0';
-                return versionDict[exactKey].max;
+              try {
+                await github.rest.repos.uploadReleaseAsset({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  release_id: context.payload.release.id,
+                  name: zipFile,
+                  data: fileContent
+                });
+                
+                console.log(`Uploaded ${zipFile}`);
+              } catch (error) {
+                console.error(`Failed to upload ${zipFile}:`, error.message);
               }
             }
             
-            // Function to process packs in a directory
-            async function processPacks(rootDir, versionDict, packType) {
-              if (!fs.existsSync(rootDir)) {
-                console.log(`No ${rootDir} directory found, skipping`);
-                return;
-              }
-              
-              const subdirs = fs.readdirSync(rootDir, { withFileTypes: true })
-                .filter(dirent => dirent.isDirectory())
-                .map(dirent => dirent.name);
-              
-              console.log(`\nFound ${subdirs.length} ${packType}(s): ${subdirs.join(', ')}`);
-              
-              // Process each pack
-              for (const subdir of subdirs) {
-                const packPath = path.join(rootDir, subdir);
-                const packMetaPath = path.join(packPath, 'pack.mcmeta');
-                
-                if (!fs.existsSync(packMetaPath)) {
-                  console.log(`Skipping ${subdir}: no pack.mcmeta found`);
-                  continue;
-                }
-                
-                // Read and parse pack.mcmeta
-                const packMeta = JSON.parse(fs.readFileSync(packMetaPath, 'utf8'));
-                const pack = packMeta.pack;
-                
-                let minFormat, maxFormat;
-                
-                // Check for supported_formats first
-                if (pack.supported_formats) {
-                  if (typeof pack.supported_formats === 'object' && !Array.isArray(pack.supported_formats)) {
-                    minFormat = pack.supported_formats.min_inclusive;
-                    maxFormat = pack.supported_formats.max_inclusive;
-                  } else if (Array.isArray(pack.supported_formats)) {
-                    // Handle array format [min, max]
-                    minFormat = pack.supported_formats[0];
-                    maxFormat = pack.supported_formats[1];
-                  }
-                }
-                
-                // Fallback to pack_format (or pack_version)
-                if (!minFormat || !maxFormat) {
-                  const formatVersion = pack.pack_format || pack.pack_version;
-                  if (!formatVersion) {
-                    console.log(`Skipping ${subdir}: no version information found`);
-                    continue;
-                  }
-                  minFormat = formatVersion;
-                  maxFormat = formatVersion;
-                }
-                
-                console.log(`Processing ${subdir}: format ${minFormat}-${maxFormat}`);
-                
-                // Find version strings
-                const minVersion = findVersionString(versionDict, minFormat, true);
-                const maxVersion = findVersionString(versionDict, maxFormat, false);
-                
-                console.log(`  Version range: ${minVersion}-${maxVersion}`);
-                
-                // Create zip file
-                const zipName = `${subdir} (${minVersion}-${maxVersion}).zip`;
-                const zipPath = path.join(process.cwd(), zipName);
-                
-                // Create zip using system zip command
-                // Change to pack directory so zip root contains pack.mcmeta
-                try {
-                  execSync(`cd "${packPath}" && zip -r "${zipPath}" .`, { stdio: 'inherit' });
-                  console.log(`  Created ${zipName}`);
-                } catch (error) {
-                  console.error(`  Failed to create zip for ${subdir}:`, error.message);
-                  continue;
-                }
-                
-                // Upload to release
-                try {
-                  const fileContent = fs.readFileSync(zipPath);
-                  
-                  await github.rest.repos.uploadReleaseAsset({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    release_id: context.payload.release.id,
-                    name: zipName,
-                    data: fileContent
-                  });
-                  
-                  console.log(`  Uploaded ${zipName} to release`);
-                  
-                  // Clean up zip file
-                  fs.unlinkSync(zipPath);
-                } catch (error) {
-                  console.error(`  Failed to upload ${zipName}:`, error.message);
-                }
-              }
-            }
-            
-            // Process datapacks
-            await processPacks('datapacks', versionNumbers.data, 'datapack');
-            
-            // Process resourcepacks
-            await processPacks('resourcepacks', versionNumbers.resource, 'resourcepack');
-            
-            console.log('\nPack packaging complete!');
+            console.log('Release asset upload complete!');
