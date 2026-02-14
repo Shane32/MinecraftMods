@@ -1,0 +1,12 @@
+{
+  "pack": {
+    "pack_format": 48,
+    "description": "Creepers burn in daylight (runs once per second)",
+    "supported_formats": {
+      "min_inclusive": 48,
+      "max_inclusive": 94
+    },
+    "min_format": 48,
+    "max_format": 94
+  }
+}
