@@ -4,30 +4,33 @@ A collection of Minecraft data packs and resource packs.
 
 ## Data Packs
 
-### Creepers Burn in Daylight
-**Supported Versions:** Minecraft 1.21 - 1.21.11
+| Name | Description | Supported Versions |
+|------|-------------|-------------------|
+| [Creepers Burn in Daylight](datapacks/creepers_burn_daylight/) | Makes creepers ignite when exposed to daylight, similar to zombies and skeletons. Runs once per second for lower server overhead. Works on vanilla or Fabric servers with no mods required. | 1.21 – 1.21.11 |
 
-Makes creepers ignite when exposed to daylight, similar to zombies and skeletons.
+### Adding a Data Pack to This Repository
 
-- Runs once per second for lower server overhead
-- Works on vanilla or Fabric servers
-- No mods required
+1. Create a new subfolder under `datapacks/` named after your pack (e.g. `datapacks/my_pack/`).
+2. Add a `pack.mcmeta` file at the root of that folder with the appropriate `pack_format` and `supported_formats`.
+3. Place all pack data inside a `data/` subfolder following standard Minecraft data pack structure.
+4. Update this README to include the new pack in the table above.
 
-**Installation:**
-1. Download the latest release from the [Releases](../../releases) page
-2. Place the ZIP file into `<server>/<level-name>/datapacks/`
-3. Run `/reload` or restart the server
-4. Verify with `/datapack list`
-
-**To Disable:**
-```
-/datapack disable "file/creepers_burn_daylight"
-```
-Then run `/reload`.
+The build script will automatically detect any subfolder containing a `pack.mcmeta` and include it when running `npm run pack`.
 
 ## Resource Packs
 
-_No resource packs available yet._
+| Name | Description | Supported Versions |
+|------|-------------|-------------------|
+| _(none yet)_ | | |
+
+### Adding a Resource Pack to This Repository
+
+1. Create a new subfolder under `resourcepacks/` named after your pack (e.g. `resourcepacks/my_pack/`).
+2. Add a `pack.mcmeta` file at the root of that folder with the appropriate `pack_format` and `supported_formats`.
+3. Place all pack assets inside an `assets/` subfolder following standard Minecraft resource pack structure.
+4. Update this README to include the new pack in the table above.
+
+The build script will automatically detect any subfolder containing a `pack.mcmeta` and include it when running `npm run pack`.
 
 ## Version Information
 
@@ -48,7 +51,7 @@ npm install
 npm run pack
 ```
 
-This will create ZIP files for all data packs and resource packs in the repository.
+This will create ZIP files for all data packs and resource packs in the repository, placed in the `dist/` directory.
 
 ### Requirements
 
