@@ -6,7 +6,7 @@ A collection of Minecraft data packs and resource packs.
 
 | Name | Description | Supported Versions |
 |------|-------------|-------------------|
-| [Creepers Burn in Daylight](datapacks/creepers_burn_daylight/) | Makes creepers ignite when exposed to daylight, similar to zombies and skeletons. Runs once per second for lower server overhead. Works on vanilla or Fabric servers with no mods required. | 1.21 – 1.21.11 |
+| [Creepers Burn in Daylight](datapacks/creepers_burn_daylight/) | Makes creepers ignite when exposed to daylight, similar to zombies and skeletons. Runs once per second for lower server overhead. Works on vanilla or Fabric servers with no mods required. | 1.21 – 26.1 |
 
 ### Adding a Data Pack to This Repository
 
