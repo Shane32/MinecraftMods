@@ -1,4 +1,4 @@
-Creepers Burn in Daylight Datapack (Minecraft 1.21.x)
+Creepers Burn in Daylight Datapack (Minecraft 1.21.x - 26.2)
 
 What it does:
 - Creepers ignite when exposed to daylight similar to zombies/skeletons.
